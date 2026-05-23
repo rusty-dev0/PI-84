@@ -8,6 +8,7 @@ using namespace std;
 struct triangle
 {
     Vector3 p[3];
+    Color c;
 };
 
 struct mesh
@@ -74,28 +75,28 @@ private:
         meshCube.tris =
         {
             // south
-            { 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
-            { 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+            { 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f,  RED },
+            { 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f,  RED },
 
             // east                                                      
-            { 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
-            { 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+            { 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,  GREEN },
+            { 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f,  GREEN },
 
             // north                                                     
-            { 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
-            { 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
+            { 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f,  RED },
+            { 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f,  RED },
 
             // west                                                      
-            { 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
-            { 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+            { 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f,  GREEN },
+            { 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f,  GREEN },
 
             // top                                                       
-            { 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
-            { 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
+            { 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f,  BLUE },
+            { 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f,  BLUE },
 
             // bottom                                                    
-            { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-            { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+            { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,  BLUE },
+            { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f,  BLUE },
         };
 
         // projection matrix
@@ -183,6 +184,22 @@ private:
                     normal.y * (triTranslated.p[0].y - vCamera.y) +
                     normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0f)
                 {
+                    // illumination
+                    Vector3 lightDirection = { 0.0f, 0.0f, -1.0f };
+                    float l = sqrtf(lightDirection.x * lightDirection.x + lightDirection.y * lightDirection.y + lightDirection.z * lightDirection.z);
+                    lightDirection.x /= l;
+                    lightDirection.y /= l;
+                    lightDirection.z /= l;
+
+                    float dot = abs(normal.x * lightDirection.x + normal.y * lightDirection.y + normal.z * lightDirection.z);
+                    float ambiant = 0.0f;
+                    float intensity = ambiant + dot * (1.0f - ambiant);
+                    
+                    Color faceColor = tri.c;
+                    faceColor.r = (unsigned char)(faceColor.r * intensity);
+                    faceColor.g = (unsigned char)(faceColor.g * intensity);
+                    faceColor.b = (unsigned char)(faceColor.b * intensity);
+
                     // project triangles to the 2D screen
                     MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], matProj);
                     MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], matProj);
@@ -200,12 +217,20 @@ private:
                     triProjected.p[2].x *= 0.5f * (float)width;
                     triProjected.p[2].y *= 0.5f * (float)height;
 
-                    DrawTriangleLines(
+                    DrawTriangle(
                         Vector2{triProjected.p[0].x, triProjected.p[0].y},
                         Vector2{triProjected.p[1].x, triProjected.p[1].y},
                         Vector2{triProjected.p[2].x, triProjected.p[2].y},
-                        WHITE
+                        faceColor
                     );
+
+                    // for debug later
+                    // DrawTriangleLines(
+                    //     Vector2{triProjected.p[0].x, triProjected.p[0].y},
+                    //     Vector2{triProjected.p[1].x, triProjected.p[1].y},
+                    //     Vector2{triProjected.p[2].x, triProjected.p[2].y},
+                    //     faceColor <-- you can make this white to see a wireframe or something
+                    // );
                 }
             }
 
