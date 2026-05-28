@@ -1,60 +1,79 @@
-cmake_minimum_required(VERSION 3.10)
-project(Engine3D VERSION 1.0 LANGUAGES CXX)
+# Generated Cmake Pico project file
 
+cmake_minimum_required(VERSION 3.13)
+
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(SOURCES Engine3D.cpp main.cpp)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_library(X11_LIB X11)
-find_library(GL_LIB GL)
-find_library(XRANDR_LIB Xrandr)
-find_library(XXF86VM_LIB Xxf86vm)
-find_library(XCURSOR_LIB Xcursor)
-find_library(XINERAMA_LIB Xinerama)
+# Initialise pico_sdk from installed location
+# (note this can come from environment, CMake cache etc)
 
-set(RAYLIB_SYSTEM_LIBS m pthread ${CMAKE_DL_LIBS} rt)
-if(X11_LIB)
-  list(APPEND RAYLIB_SYSTEM_LIBS ${X11_LIB})
-endif()
-if(GL_LIB)
-  list(APPEND RAYLIB_SYSTEM_LIBS ${GL_LIB})
-endif()
-if(XRANDR_LIB)
-  list(APPEND RAYLIB_SYSTEM_LIBS ${XRANDR_LIB})
-endif()
-if(XXF86VM_LIB)
-  list(APPEND RAYLIB_SYSTEM_LIBS ${XXF86VM_LIB})
-endif()
-if(XCURSOR_LIB)
-  list(APPEND RAYLIB_SYSTEM_LIBS ${XCURSOR_LIB})
-endif()
-if(XINERAMA_LIB)
-  list(APPEND RAYLIB_SYSTEM_LIBS ${XINERAMA_LIB})
-endif()
-
-find_package(raylib CONFIG)
-if(raylib_FOUND)
-  add_executable(raylib_test ${SOURCES})
-  target_link_libraries(raylib_test PRIVATE raylib::raylib)
+# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
 else()
-  if(EXISTS "$ENV{HOME}/raylib/src/raylib.h" AND (EXISTS "$ENV{HOME}/raylib/src/libraylib.a" OR EXISTS "$ENV{HOME}/raylib/src/libraylib.so"))
-    add_executable(raylib_test ${SOURCES})
-    target_include_directories(raylib_test PRIVATE "$ENV{HOME}/raylib/src")
-    if(EXISTS "$ENV{HOME}/raylib/src/libraylib.a")
-      target_link_libraries(raylib_test PRIVATE "$ENV{HOME}/raylib/src/libraylib.a" ${RAYLIB_SYSTEM_LIBS})
-    else()
-      target_link_libraries(raylib_test PRIVATE "$ENV{HOME}/raylib/src/libraylib.so" ${RAYLIB_SYSTEM_LIBS})
-      set_target_properties(raylib_test PROPERTIES INSTALL_RPATH "$ENV{HOME}/raylib/src")
-    endif()
-  elseif(EXISTS "/usr/local/include/raylib.h" AND (EXISTS "/usr/local/lib/libraylib.a" OR EXISTS "/usr/local/lib/libraylib.so"))
-    add_executable(raylib_test ${SOURCES})
-    target_include_directories(raylib_test PRIVATE /usr/local/include)
-    if(EXISTS "/usr/local/lib/libraylib.a")
-      target_link_libraries(raylib_test PRIVATE /usr/local/lib/libraylib.a ${RAYLIB_SYSTEM_LIBS})
-    else()
-      target_link_libraries(raylib_test PRIVATE /usr/local/lib/libraylib.so ${RAYLIB_SYSTEM_LIBS})
-      set_target_properties(raylib_test PROPERTIES INSTALL_RPATH "/usr/local/lib")
-    endif()
-  else()
-    message(FATAL_ERROR "raylib not found. Install raylib or place it in $HOME/raylib/src or /usr/local.")
-  endif()
+    set(USERHOME $ENV{HOME})
 endif()
+set(sdkVersion 2.2.0)
+set(toolchainVersion 14_2_Rel1)
+set(picotoolVersion 2.2.0-a4)
+set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
+if (EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
+# ====================================================================================
+set(PICO_BOARD pico CACHE STRING "Board type")
+
+# Pull in Raspberry Pi Pico SDK (must be before project)
+include(pico_sdk_import.cmake)
+
+project(PI-84 C CXX ASM)
+
+# Initialise the Raspberry Pi Pico SDK
+pico_sdk_init()
+
+# Add executable. Default name is the project name, version 0.1
+
+add_executable(PI-84
+    main.c
+    ST7735_TFT.c
+    hw.c
+)
+
+pico_set_program_name(PI-84 "PI-84")
+pico_set_program_version(PI-84 "0.1")
+
+# Modify the below lines to enable/disable output over UART/USB
+pico_enable_stdio_uart(PI-84 0)
+pico_enable_stdio_usb(PI-84 1)
+
+# Add the standard library to the build
+target_link_libraries(PI-84
+    pico_stdlib
+    hardware_clocks
+    hardware_spi
+    hardware_pwm
+    hardware_irq
+    hardware_sync
+)
+
+# Add the standard include files to the build
+target_include_directories(PI-84 PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/include
+)
+
+# Adafruit 1.8" ST7735 wiring on SPI0
+target_compile_definitions(PI-84 PRIVATE
+    SPI_TFT_PORT=spi0
+    SPI_TFT_CS=5
+    SPI_TFT_DC=6
+    SPI_TFT_RST=0
+    TFT_ENABLE_RED
+    TFT_ENABLE_RESET
+    TFT_ENABLE_SHAPES
+    TFT_ENABLE_ROTATE
+)
+
+pico_add_extra_outputs(PI-84)
